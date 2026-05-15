@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AS Golf — Coach View</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,sans-serif;background:#f4f4f0;color:#1a1a1a}
+.gold-bar{height:5px;background:linear-gradient(90deg,#EF9F27,#f5c76e,#EF9F27)}
+.hdr{background:#1a3a2a;padding:14px 16px;display:flex;align-items:center;justify-content:space-between}
+.hdr-left .brand{font-size:11px;letter-spacing:2.5px;color:#EF9F27;font-family:Georgia,serif;font-weight:bold}
+.hdr-left .title{font-size:15px;font-weight:600;color:#a8c4b0;margin-top:3px}
+.back-btn{background:none;border:1px solid #a8c4b0;border-radius:6px;color:#a8c4b0;padding:6px 12px;font-size:12px;cursor:pointer;display:none}
+.back-btn:hover{background:#0F6E56;border-color:#0F6E56;color:white}
+.loading{padding:40px 16px;text-align:center;color:#888;font-size:14px}
+.error{padding:20px 16px;text-align:center;color:#c0392b;font-size:13px}
+.overview-wrap{padding:14px 16px}
+.ov-title{font-size:10px;letter-spacing:2px;font-weight:600;color:#0F6E56;margin-bottom:12px}
+.player-card{background:white;border:1px solid #e0e0d8;border-radius:8px;padding:12px 14px;margin-bottom:8px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;transition:border-color .2s}
+.player-card:hover{border-color:#0F6E56}
+.player-card.inactive{border-left:3px solid #f0c040}
+.player-card.active{border-left:3px solid #0F6E56}
+.player-card.nodata{border-left:3px solid #ddd}
+.pc-left .pc-name{font-size:14px;font-weight:600;color:#1a3a2a}
+.pc-left .pc-meta{font-size:11px;color:#888;margin-top:3px}
+.pc-right{text-align:right}
+.pc-rounds{font-size:20px;font-weight:700;color:#1a3a2a;font-family:Georgia,serif}
+.pc-rounds-lbl{font-size:10px;color:#aaa}
+.pc-last{font-size:11px;margin-top:2px}
+.pc-last.recent{color:#0F6E56}
+.pc-last.stale{color:#EF9F27}
+.pc-last.none{color:#aaa}
+.pc-arrow{font-size:18px;color:#ccc;margin-left:10px}
+.detail-wrap{padding:14px 16px}
+.player-hero{background:#1a3a2a;border-radius:10px;padding:14px 16px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center}
+.ph-name{font-size:17px;font-weight:700;color:white;font-family:Georgia,serif}
+.ph-meta{font-size:12px;color:#a8c4b0;margin-top:4px}
+.ph-right{text-align:right}
+.ph-rounds{font-size:28px;font-weight:700;color:#EF9F27;font-family:Georgia,serif}
+.ph-rounds-lbl{font-size:10px;color:#a8c4b0}
+.sec-title{font-size:10px;letter-spacing:2px;font-weight:600;color:#0F6E56;margin:14px 0 8px}
+.latest-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+.lc{background:white;border:1px solid #e0e0d8;border-radius:8px;padding:10px 12px}
+.lc.wide{grid-column:1/-1}
+.lc-label{font-size:10px;color:#888;margin-bottom:3px;font-weight:500}
+.lc-val{font-size:22px;font-weight:700;color:#1a3a2a;font-family:Georgia,serif}
+.lc-sub{font-size:10px;color:#aaa;margin-top:2px}
+.trend-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+.tc{background:white;border:1px solid #e0e0d8;border-radius:8px;padding:10px 12px}
+.tc-label{font-size:10px;color:#888;margin-bottom:6px;font-weight:500}
+.tc-vals{display:flex;gap:4px;align-items:flex-end;margin-bottom:4px}
+.tc-bar{width:18px;border-radius:3px 3px 0 0;background:#0F6E56;min-height:4px;transition:height .3s}
+.tc-bar.dim{background:#c8ddd5}
+.tc-latest{font-size:16px;font-weight:700;color:#1a3a2a;font-family:Georgia,serif}
+.tc-trend{font-size:11px;margin-top:2px}
+.tc-trend.up{color:#0F6E56}
+.tc-trend.down{color:#c0392b}
+.tc-trend.flat{color:#888}
+.zone-card{background:white;border:1px solid #e0e0d8;border-radius:8px;padding:10px 12px;margin-bottom:8px}
+.zone-row{display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f4f4f0}
+.zone-row:last-child{border-bottom:none}
+.zone-row:first-child{padding-top:0}
+.zr-label{font-size:12px;color:#444;font-weight:500}
+.zr-stats{display:flex;gap:16px}
+.zr-stat{text-align:center}
+.zr-val{font-size:14px;font-weight:700;color:#1a3a2a}
+.zr-lbl{font-size:9px;color:#aaa}
+.band-row{display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f4f4f0}
+.band-row:last-child{border-bottom:none}
+.band-row:first-child{padding-top:0}
+.br-label{font-size:12px;color:#444;font-weight:500;min-width:60px}
+.br-bar-wrap{flex:1;margin:0 10px;height:8px;background:#f0f0e8;border-radius:4px;overflow:hidden}
+.br-bar{height:100%;background:#0F6E56;border-radius:4px}
+.br-pct{font-size:13px;font-weight:700;color:#1a3a2a;min-width:40px;text-align:right}
+.br-att{font-size:10px;color:#aaa;min-width:36px;text-align:right}
+.round-item{background:white;border:1px solid #e0e0d8;border-radius:8px;margin-bottom:8px;overflow:hidden}
+.ri-header{padding:12px 14px;display:flex;justify-content:space-between;align-items:center;cursor:pointer}
+.ri-header:hover{background:#f9f9f6}
+.ri-left .ri-date{font-size:13px;font-weight:600;color:#1a3a2a}
+.ri-left .ri-course{font-size:11px;color:#888;margin-top:2px}
+.ri-right{display:flex;gap:12px;align-items:center}
+.ri-score{font-size:20px;font-weight:700;color:#1a3a2a;font-family:Georgia,serif}
+.ri-putts{font-size:12px;color:#888}
+.ri-arrow{font-size:14px;color:#ccc;transition:transform .2s}
+.ri-arrow.open{transform:rotate(180deg)}
+.ri-body{display:none;padding:0 14px 12px;border-top:1px solid #f4f4f0}
+.ri-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:10px}
+.ri-stat{background:#f4f4f0;border-radius:6px;padding:6px 8px;text-align:center}
+.ri-stat-val{font-size:14px;font-weight:700;color:#1a3a2a}
+.ri-stat-lbl{font-size:9px;color:#888;margin-top:1px}
+.ri-zones{margin-top:8px}
+.ri-zone-row{display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-bottom:1px solid #f4f4f0;color:#444}
+.ri-zone-row:last-child{border-bottom:none}
+.ri-zone-val{font-weight:600;color:#1a3a2a}
+/* Edit styles */
+.edit-btn{background:none;border:1px solid #0F6E56;border-radius:6px;color:#0F6E56;padding:5px 10px;font-size:11px;font-weight:600;cursor:pointer;margin-top:10px}
+.edit-btn:hover{background:#0F6E56;color:white}
+.edit-panel{background:#f9fcfa;border:1px solid #c8ddd5;border-radius:8px;padding:12px;margin-top:10px;display:none}
+.ep-title{font-size:10px;letter-spacing:1.5px;font-weight:600;color:#0F6E56;margin-bottom:10px}
+.ep-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.ep-field label{font-size:10px;color:#888;font-weight:600;display:block;margin-bottom:3px}
+.ep-field input{width:100%;border:1px solid #ddd;border-radius:6px;padding:6px 8px;font-size:13px;color:#1a3a2a;background:white;outline:none}
+.ep-field input:focus{border-color:#0F6E56}
+.ep-row{display:flex;gap:8px;align-items:center}
+.ep-save{background:#0F6E56;color:white;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;flex:1}
+.ep-cancel{background:none;border:1px solid #ccc;border-radius:6px;padding:8px 12px;font-size:13px;color:#888;cursor:pointer}
+.ep-status{font-size:11px;margin-left:8px}
+.ep-status.ok{color:#0F6E56}
+.ep-status.err{color:#c0392b}
+</style>
+</head>
+<body>
+<div class="gold-bar"></div>
+<div class="hdr">
+  <div class="hdr-left">
+    <div class="brand">ANTHONY SUMMERS GOLF</div>
+    <div class="title">Coach View</div>
+  </div>
+  <button class="back-btn" id="backBtn" onclick="showOverview()">← All Players</button>
+</div>
+
+<div id="mainContent"><div class="loading">Loading players...</div></div>
+
+<script>
+const SUPABASE_URL='https://dejmkfbzbqtvqgxtwipv.supabase.co';
+const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRlam1rZmJ6YnF0dnFneHR3aXB2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI2MjE3MTIsImV4cCI6MjA4ODE5NzcxMn0.adXWYWVg6yGMb77VHGGFuB3kFO2a-hP3XkGC9pq7vg0';
+
+const BANDS=['0–3ft','3–5ft','5–10ft','10–15ft','15–25ft','25–40ft','40ft+'];
+const BAND_KEYS=['0_3','3_5','5_10','10_15','15_25','25_40','40p'];
+
+async function fetchJSON(url){
+  const res=await fetch(url,{headers:{'apikey':SUPABASE_KEY,'Authorization':`Bearer ${SUPABASE_KEY}`}});
+  return res.json();
+}
+
+function daysSince(dateStr){
+  if(!dateStr)return null;
+  return Math.floor((Date.now()-new Date(dateStr).getTime())/86400000);
+}
+
+function fmt(v,dp=1){return v!=null?Number(v).toFixed(dp):'—';}
+function fmtInt(v){return v!=null?Math.round(v):'—';}
+
+async function loadOverview(){
+  try{
+    const players=await fetchJSON(`${SUPABASE_URL}/rest/v1/players?programs=cs.{stat_tracker}&order=name.asc&select=id,name,handicap,club`);
+    const rounds=await fetchJSON(`${SUPABASE_URL}/rest/v1/stat_tracker_rounds?select=player_id,round_date&order=round_date.desc`);
+    const roundsByPlayer={};
+    rounds.forEach(r=>{if(!roundsByPlayer[r.player_id])roundsByPlayer[r.player_id]=[];roundsByPlayer[r.player_id].push(r.round_date);});
+    let html=`<div class="overview-wrap"><div class="ov-title">PLAYERS — STAT TRACKER</div>`;
+    players.forEach(p=>{
+      const pRounds=roundsByPlayer[p.id]||[];
+      const count=pRounds.length;
+      const lastDate=pRounds[0]||null;
+      const days=daysSince(lastDate);
+      let statusClass=count===0?'nodata':days<=7?'active':'inactive';
+      let lastStr=count===0
+        ?'<span class="pc-last none">No rounds yet</span>'
+        :days===0?'<span class="pc-last recent">Today</span>'
+        :days===1?'<span class="pc-last recent">Yesterday</span>'
+        :days<=7?`<span class="pc-last recent">${days} days ago</span>`
+        :`<span class="pc-last stale">${days} days ago</span>`;
+      html+=`<div class="player-card ${statusClass}" onclick="loadPlayer('${p.id}','${p.name}')">
+        <div class="pc-left">
+          <div class="pc-name">${p.name}</div>
+          <div class="pc-meta">${p.club||''} ${p.handicap!=null?'· Hcp '+p.handicap:''}</div>
+          ${lastStr}
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="pc-right">
+            <div class="pc-rounds">${count}</div>
+            <div class="pc-rounds-lbl">round${count!==1?'s':''}</div>
+          </div>
+          <div class="pc-arrow">›</div>
+        </div>
+      </div>`;
+    });
+    html+='</div>';
+    document.getElementById('mainContent').innerHTML=html;
+    document.getElementById('backBtn').style.display='none';
+  }catch(e){
+    document.getElementById('mainContent').innerHTML=`<div class="error">Failed to load players. Check your connection.</div>`;
+  }
+}
+
+async function loadPlayer(playerId,playerName){
+  document.getElementById('mainContent').innerHTML=`<div class="loading">Loading ${playerName}...</div>`;
+  document.getElementById('backBtn').style.display='block';
+  try{
+    const [playerArr,rounds]=await Promise.all([
+      fetchJSON(`${SUPABASE_URL}/rest/v1/players?id=eq.${playerId}&select=*`),
+      fetchJSON(`${SUPABASE_URL}/rest/v1/stat_tracker_rounds?player_id=eq.${playerId}&order=round_date.desc`)
+    ]);
+    renderPlayerDetail(playerArr[0],rounds);
+  }catch(e){
+    document.getElementById('mainContent').innerHTML=`<div class="error">Failed to load player data.</div>`;
+  }
+}
+
+function renderPlayerDetail(player,rounds){
+  if(!rounds.length){
+    document.getElementById('mainContent').innerHTML=`
+      <div class="detail-wrap">
+        <div class="player-hero">
+          <div><div class="ph-name">${player.name}</div><div class="ph-meta">${player.club||''}</div></div>
+          <div class="ph-right"><div class="ph-rounds">0</div><div class="ph-rounds-lbl">rounds</div></div>
+        </div>
+        <div style="padding:20px;text-align:center;color:#888;font-size:13px">No rounds submitted yet.</div>
+      </div>`;
+    return;
+  }
+
+  const latest=rounds[0];
+  const last5=rounds.slice(0,5).reverse();
+
+  const accBands=BAND_KEYS.map(()=>({att:0,made:0}));
+  rounds.forEach(r=>{BAND_KEYS.forEach((k,i)=>{accBands[i].att+=(r[`putt_band_${k}_att`]||0);accBands[i].made+=(r[`putt_band_${k}_made`]||0);});});
+
+  function trendCard(label,values,unit='',lowerBetter=false){
+    const valid=values.filter(v=>v!=null);
+    if(!valid.length)return `<div class="tc"><div class="tc-label">${label}</div><div class="tc-latest">—</div></div>`;
+    const lat=valid[valid.length-1];
+    const prev=valid.length>1?valid[valid.length-2]:null;
+    const maxV=Math.max(...valid.filter(v=>v>0))||1;
+    const bars=values.map((v,i)=>{
+      const h=v!=null?Math.max(Math.round((v/maxV)*40),4):4;
+      return `<div class="tc-bar${i===values.length-1?'':' dim'}" style="height:${h}px"></div>`;
+    }).join('');
+    let trendHtml='';
+    if(prev!=null){
+      const diff=lat-prev;
+      const better=lowerBetter?diff<0:diff>0;
+      const arrow=diff>0?'↑':diff<0?'↓':'→';
+      const cls=diff===0?'flat':better?'up':'down';
+      trendHtml=`<div class="tc-trend ${cls}">${arrow} ${Math.abs(diff).toFixed(1)} from last round</div>`;
+    }
+    return `<div class="tc"><div class="tc-label">${label}</div><div class="tc-vals">${bars}</div><div class="tc-latest">${fmt(lat,unit===''?1:0)}${unit}</div>${trendHtml}</div>`;
+  }
+
+  function zoneAvg(key){const v=rounds.map(r=>r[key]).filter(v=>v!=null);return v.length?v.reduce((a,b)=>a+b,0)/v.length:null;}
+
+  const html=`<div class="detail-wrap">
+    <div class="player-hero">
+      <div><div class="ph-name">${player.name}</div><div class="ph-meta">${player.club||''} ${player.handicap!=null?'· Hcp '+player.handicap:''}</div></div>
+      <div class="ph-right"><div class="ph-rounds">${rounds.length}</div><div class="ph-rounds-lbl">round${rounds.length!==1?'s':''}</div></div>
+    </div>
+
+    <div class="sec-title">LATEST ROUND — ${new Date(latest.round_date).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'})}</div>
+    <div class="latest-grid">
+      <div class="lc"><div class="lc-label">Score</div><div class="lc-val">${latest.total_score||'—'}</div><div class="lc-sub">${latest.course||''}</div></div>
+      <div class="lc"><div class="lc-label">Total putts</div><div class="lc-val">${latest.putts_total||'—'}</div><div class="lc-sub">${latest.putts_per_hole_avg?latest.putts_per_hole_avg+' per hole':''}</div></div>
+      <div class="lc"><div class="lc-label">Avg first putt</div><div class="lc-val">${latest.first_putt_avg?latest.first_putt_avg+'ft':'—'}</div><div class="lc-sub">short game holes</div></div>
+      <div class="lc"><div class="lc-label">GIR from 40–100m</div><div class="lc-val">${latest.gir_pct!=null?latest.gir_pct+'%':'—'}</div><div class="lc-sub">${latest.gir_hits||0} from ${latest.gir_attempts||0}</div></div>
+      <div class="lc wide"><div class="lc-label">Wasted / penalty shots</div><div class="lc-val">${latest.pen_total||0}</div><div class="lc-sub">OB ${latest.pen_ob||0} · Water ${latest.pen_water||0} · Unplayable ${latest.pen_unplayable||0} · Chip out ${latest.pen_chipout||0}</div></div>
+    </div>
+
+    <div class="sec-title">TRENDS — LAST ${last5.length} ROUNDS</div>
+    <div class="trend-grid">
+      ${trendCard('Score',last5.map(r=>r.total_score),'',true)}
+      ${trendCard('Total putts',last5.map(r=>r.putts_total),'',true)}
+      ${trendCard('Avg first putt',last5.map(r=>r.first_putt_avg),'ft',true)}
+      ${trendCard('Avg last putt',last5.map(r=>r.last_putt_avg),'ft',true)}
+      ${trendCard('GIR %',last5.map(r=>r.gir_pct),'%',false)}
+      ${trendCard('Wasted shots',last5.map(r=>r.pen_total),'',true)}
+    </div>
+
+    <div class="sec-title">ZONE AVERAGES — ALL ROUNDS</div>
+    <div class="zone-card">
+      ${[['40–100m','shots_40_100','stf_40_100','prox_40_100'],['20–40m','shots_20_40','stf_20_40','prox_20_40'],['Chip (0–20m)','shots_chip','stf_chip','prox_chip'],['Bunker','shots_bunker','stf_bunker','prox_bunker']].map(([lbl,sk,stfk,proxk])=>`
+      <div class="zone-row">
+        <span class="zr-label">${lbl}</span>
+        <div class="zr-stats">
+          <div class="zr-stat"><div class="zr-val">${fmtInt(zoneAvg(sk))}</div><div class="zr-lbl">shots/round</div></div>
+          <div class="zr-stat"><div class="zr-val">${zoneAvg(stfk)!=null?Number(zoneAvg(stfk)).toFixed(1):'—'}</div><div class="zr-lbl">shots to finish</div></div>
+          <div class="zr-stat"><div class="zr-val">${zoneAvg(proxk)!=null?Math.round(zoneAvg(proxk))+'ft':'—'}</div><div class="zr-lbl">proximity</div></div>
+        </div>
+      </div>`).join('')}
+    </div>
+
+    <div class="sec-title">PUTTING CONVERSION — ALL ROUNDS COMBINED</div>
+    <div class="zone-card">
+      ${accBands.map((b,i)=>{
+        const pct=b.att>0?Math.round(b.made/b.att*100):null;
+        return `<div class="band-row">
+          <span class="br-label">${BANDS[i]}</span>
+          <div class="br-bar-wrap"><div class="br-bar" style="width:${pct||0}%"></div></div>
+          <span class="br-pct">${pct!=null?pct+'%':'—'}</span>
+          <span class="br-att">${b.att>0?b.made+'/'+b.att:''}</span>
+        </div>`;
+      }).join('')}
+    </div>
+
+    <div class="sec-title">ROUND HISTORY</div>
+    ${rounds.map((r,idx)=>`
+      <div class="round-item">
+        <div class="ri-header" onclick="toggleRound('r${idx}')">
+          <div class="ri-left">
+            <div class="ri-date">${new Date(r.round_date).toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short',year:'numeric'})}</div>
+            <div class="ri-course">${r.course||''}${r.tee?' · '+r.tee+' tees':''}</div>
+          </div>
+          <div class="ri-right">
+            <div>
+              <div class="ri-score">${r.total_score||'—'}</div>
+              <div class="ri-putts">${r.putts_total||0} putts</div>
+            </div>
+            <div class="ri-arrow" id="arr_r${idx}">▼</div>
+          </div>
+        </div>
+        <div class="ri-body" id="r${idx}">
+          <div class="ri-grid">
+            <div class="ri-stat"><div class="ri-stat-val">${r.shots_40_100||0}</div><div class="ri-stat-lbl">40–100m</div></div>
+            <div class="ri-stat"><div class="ri-stat-val">${r.shots_20_40||0}</div><div class="ri-stat-lbl">20–40m</div></div>
+            <div class="ri-stat"><div class="ri-stat-val">${r.shots_chip||0}</div><div class="ri-stat-lbl">Chip</div></div>
+            <div class="ri-stat"><div class="ri-stat-val">${r.shots_bunker||0}</div><div class="ri-stat-lbl">Bunker</div></div>
+            <div class="ri-stat"><div class="ri-stat-val">${r.first_putt_avg!=null?r.first_putt_avg+'ft':'—'}</div><div class="ri-stat-lbl">Avg 1st putt</div></div>
+            <div class="ri-stat"><div class="ri-stat-val">${r.last_putt_avg!=null?r.last_putt_avg+'ft':'—'}</div><div class="ri-stat-lbl">Avg last putt</div></div>
+            <div class="ri-stat"><div class="ri-stat-val">${r.gir_pct!=null?r.gir_pct+'%':'—'}</div><div class="ri-stat-lbl">GIR %</div></div>
+            <div class="ri-stat"><div class="ri-stat-val">${r.pen_total||0}</div><div class="ri-stat-lbl">Wasted shots</div></div>
+            <div class="ri-stat"><div class="ri-stat-val">${r.handicap_at_time!=null?r.handicap_at_time:'—'}</div><div class="ri-stat-lbl">Handicap</div></div>
+          </div>
+          <div class="ri-zones" style="margin-top:10px">
+            <div style="font-size:10px;color:#0F6E56;font-weight:600;letter-spacing:1px;margin-bottom:6px">SHOTS TO FINISH</div>
+            <div class="ri-zone-row"><span>40–100m</span><span class="ri-zone-val">${r.stf_40_100!=null?r.stf_40_100+' ('+r.stf_40_100_holes+' holes)':'—'}</span></div>
+            <div class="ri-zone-row"><span>20–40m</span><span class="ri-zone-val">${r.stf_20_40!=null?r.stf_20_40+' ('+r.stf_20_40_holes+' holes)':'—'}</span></div>
+            <div class="ri-zone-row"><span>Chip</span><span class="ri-zone-val">${r.stf_chip!=null?r.stf_chip+' ('+r.stf_chip_holes+' holes)':'—'}</span></div>
+            <div class="ri-zone-row"><span>Bunker</span><span class="ri-zone-val">${r.stf_bunker!=null?r.stf_bunker+' ('+r.stf_bunker_holes+' holes)':'—'}</span></div>
+          </div>
+          <button class="edit-btn" onclick="toggleEdit('ep${idx}')">Edit round</button>
+          <div class="edit-panel" id="ep${idx}">
+            <div class="ep-title">EDIT ROUND — COACH ONLY</div>
+            <div class="ep-grid">
+              <div class="ep-field"><label>SCORE</label><input type="number" id="ep_score_${idx}" value="${r.total_score||''}"></div>
+              <div class="ep-field"><label>TOTAL PUTTS</label><input type="number" id="ep_putts_${idx}" value="${r.putts_total||''}"></div>
+              <div class="ep-field"><label>40–100m SHOTS</label><input type="number" id="ep_s100_${idx}" value="${r.shots_40_100||''}"></div>
+              <div class="ep-field"><label>20–40m SHOTS</label><input type="number" id="ep_s40_${idx}" value="${r.shots_20_40||''}"></div>
+              <div class="ep-field"><label>CHIP SHOTS</label><input type="number" id="ep_chip_${idx}" value="${r.shots_chip||''}"></div>
+              <div class="ep-field"><label>BUNKER SHOTS</label><input type="number" id="ep_bunker_${idx}" value="${r.shots_bunker||''}"></div>
+              <div class="ep-field"><label>3-PUTT HOLES</label><input type="number" id="ep_3p_${idx}" value="${r.three_putts||''}"></div>
+              <div class="ep-field"><label>OB SHOTS</label><input type="number" id="ep_ob_${idx}" value="${r.pen_ob||''}"></div>
+              <div class="ep-field"><label>WATER SHOTS</label><input type="number" id="ep_water_${idx}" value="${r.pen_water||''}"></div>
+              <div class="ep-field"><label>UNPLAYABLE</label><input type="number" id="ep_unplay_${idx}" value="${r.pen_unplayable||''}"></div>
+              <div class="ep-field"><label>CHIP OUTS</label><input type="number" id="ep_chipout_${idx}" value="${r.pen_chipout||''}"></div>
+            </div>
+            <div class="ep-row">
+              <button class="ep-save" onclick="saveEdit('${r.id}',${idx})">Save changes</button>
+              <button class="ep-cancel" onclick="toggleEdit('ep${idx}')">Cancel</button>
+              <span class="ep-status" id="ep_status_${idx}"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    `).join('')}
+  </div>`;
+
+  document.getElementById('mainContent').innerHTML=html;
+  document.getElementById('backBtn').style.display='block';
+}
+
+function toggleRound(id){
+  const body=document.getElementById(id);
+  const arr=document.getElementById('arr_'+id);
+  const open=body.style.display==='block';
+  body.style.display=open?'none':'block';
+  arr.classList.toggle('open',!open);
+}
+
+function toggleEdit(id){
+  const ep=document.getElementById(id);
+  ep.style.display=ep.style.display==='block'?'none':'block';
+}
+
+async function saveEdit(roundId,idx){
+  const g=id=>document.getElementById(id+'_'+idx);
+  const intVal=id=>{const v=parseInt(g(id).value);return isNaN(v)?null:v;};
+
+  const score=intVal('ep_score');
+  const putts=intVal('ep_putts');
+  const s100=intVal('ep_s100');
+  const s40=intVal('ep_s40');
+  const chip=intVal('ep_chip');
+  const bunker=intVal('ep_bunker');
+  const threePutts=intVal('ep_3p');
+  const ob=intVal('ep_ob');
+  const water=intVal('ep_water');
+  const unplay=intVal('ep_unplay');
+  const chipout=intVal('ep_chipout');
+
+  const penTotal=[ob,water,unplay,chipout].reduce((a,v)=>a+(v||0),0);
+
+  const payload={
+    total_score:score,
+    putts_total:putts,
+    putts_per_hole_avg:putts!=null?parseFloat((putts/18).toFixed(1)):null,
+    shots_40_100:s100,shots_20_40:s40,shots_chip:chip,shots_bunker:bunker,
+    three_putts:threePutts,
+    pen_ob:ob,pen_water:water,pen_unplayable:unplay,pen_chipout:chipout,
+    pen_total:penTotal
+  };
+
+  const statusEl=document.getElementById('ep_status_'+idx);
+  statusEl.textContent='Saving...';
+  statusEl.className='ep-status';
+
+  try{
+    const res=await fetch(`${SUPABASE_URL}/rest/v1/stat_tracker_rounds?id=eq.${roundId}`,{
+      method:'PATCH',
+      headers:{'apikey':SUPABASE_KEY,'Authorization':`Bearer ${SUPABASE_KEY}`,'Content-Type':'application/json','Prefer':'return=minimal'},
+      body:JSON.stringify(payload)
+    });
+    if(res.ok){
+      statusEl.textContent='✓ Saved';
+      statusEl.className='ep-status ok';
+      setTimeout(()=>{statusEl.textContent='';},3000);
+    } else {
+      const err=await res.text();
+      statusEl.textContent='Save failed';
+      statusEl.className='ep-status err';
+      console.error(err);
+    }
+  }catch(e){
+    statusEl.textContent='Network error';
+    statusEl.className='ep-status err';
+  }
+}
+
+function showOverview(){
+  document.getElementById('backBtn').style.display='none';
+  loadOverview();
+}
+
+loadOverview();
+</script>
+</body>
+</html>
